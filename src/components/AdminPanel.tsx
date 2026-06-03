@@ -18,6 +18,7 @@ interface AdminPanelProps {
   onDeletePost: (id: string) => void;
   onPurgeAllPosts?: () => void;
   onClose: () => void;
+  onLogout?: () => void;
 }
 
 const CATEGORIES: Category[] = [
@@ -43,7 +44,8 @@ export default function AdminPanel({
   onUpdatePost,
   onDeletePost,
   onPurgeAllPosts,
-  onClose
+  onClose,
+  onLogout
 }: AdminPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   
@@ -387,6 +389,14 @@ export default function AdminPanel({
             >
               COMMENTS ({aggregatedComments.length})
             </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="font-mono text-[9px] tracking-widest px-4 py-2 uppercase rounded-lg transition-all font-bold cursor-pointer text-stone-400 hover:text-white hover:bg-red-950/40"
+              >
+                LOGOUT
+              </button>
+            )}
           </div>
 
         </div>

@@ -11,8 +11,6 @@ import MoodBoard from './components/MoodBoard';
 import NewsletterWidget from './components/NewsletterWidget';
 import CreatePostModal from './components/CreatePostModal';
 import { BlogPost, Category, PostComment } from './types';
-import { INITIAL_POSTS } from './data';
-import { getExpandedPosts } from './expandedUniverse';
 import BlueprintSection from './components/BlueprintSection';
 import NewHomepageSections from './components/NewHomepageSections';
 import CategoryStoriesLanding from './components/CategoryStoriesLanding';
@@ -33,6 +31,11 @@ export default function App() {
   const [activePost, setActivePost] = useState<BlogPost | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Admin auth
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState(false);
 
   // Scroll Tracking for reading progress and back-to-top button
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -61,10 +64,10 @@ export default function App() {
       try {
         setPosts(JSON.parse(cachedPosts));
       } catch (e) {
-        setPosts(getExpandedPosts());
+        setPosts([]);
       }
     } else {
-      setPosts(getExpandedPosts());
+      setPosts([]);
     }
 
     // Now issue robust direct fetch request to live Express/Supabase database
@@ -89,6 +92,17 @@ export default function App() {
     if (cachedLiked) {
       try { setLikedPostIds(JSON.parse(cachedLiked)); } catch (e) {}
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/v1/auth/verify-admin')
+      .then(res => res.json())
+      .then(data => {
+        if (data.isAuthenticated) {
+          setIsAdminAuthenticated(true);
+        }
+      })
+      .catch(err => console.error("Admin verification error", err));
   }, []);
 
   // Sync active post to URL query parameters for live shareable routes
@@ -284,7 +298,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-[#0d0d0d] text-[#f5f0e8] font-sans antialiased flex flex-col justify-between">
+      <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-[#f5f0e8] font-sans antialiased flex flex-col justify-between">
       
       {/* Thin Fixed Reading Progress Bar */}
       <div 
@@ -349,17 +363,77 @@ export default function App() {
 
               {/* 1. Admin Management Deck Panel */}
               {activeCategory === 'ADMIN' ? (
-                <AdminPanel
-                  posts={posts}
-                  onAddPost={handleCreatePost}
-                  onUpdatePost={handleUpdatePost}
-                  onDeletePost={handleDeletePost}
-                  onPurgeAllPosts={handlePurgeAllPosts}
-                  onClose={() => {
-                    setActiveCategory('ALL');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                />
+                isAdminAuthenticated ? (
+                  <AdminPanel
+                    posts={posts}
+                    onAddPost={handleCreatePost}
+                    onUpdatePost={handleUpdatePost}
+                    onDeletePost={handleDeletePost}
+                    onPurgeAllPosts={handlePurgeAllPosts}
+                    onClose={() => {
+                      setActiveCategory('ALL');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onLogout={async () => {
+                      try {
+                        await fetch('/api/v1/auth/admin-logout', { method: 'POST' });
+                        setIsAdminAuthenticated(false);
+                      } catch (err) {
+                        console.error("Logout failed", err);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full max-w-md mx-auto my-12 sm:my-24 p-6 sm:p-8 border border-stone-800 bg-stone-950 rounded-2xl">
+                    <div className="text-center mb-8">
+                      <VividLogo size="lg" className="mx-auto mb-4" />
+                      <h2 className="font-bebas text-3xl tracking-widest text-[#f5f0e8] uppercase">ADMINISTRATIVE ACCESS</h2>
+                      <p className="text-stone-400 font-serif-display italic mt-2 text-sm">Please authenticate to continue.</p>
+                    </div>
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const res = await fetch('/api/v1/auth/admin-login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ password: adminPassword })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setIsAdminAuthenticated(true);
+                            setAdminError(false);
+                          } else {
+                            setAdminError(true);
+                          }
+                        } catch (err) {
+                          setAdminError(true);
+                        }
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <input
+                          type="password"
+                          value={adminPassword}
+                          onChange={(e) => {
+                            setAdminPassword(e.target.value);
+                            setAdminError(false);
+                          }}
+                          placeholder="Passcode"
+                          className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-mono text-sm tracking-widest`}
+                        />
+                        {adminError && <p className="text-red-500 font-mono text-[9px] mt-2 uppercase tracking-widest">Authentication Failed</p>}
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors"
+                      >
+                        ENTER TERMINAL
+                      </button>
+                    </form>
+                  </div>
+                )
               ) : activeCategory === 'BLUEPRINT' ? (
                 <BlueprintSection />
               ) : activeCategory === 'SAVED' ? (

@@ -1,15 +1,16 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import { getExpandedPosts } from "./src/expandedUniverse.js";
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 // ==========================================
 // 🗄️ MODEL TYPES & IN-MEMORY STATE STORAGE
@@ -128,7 +129,7 @@ export interface AnalyticsEventDB {
 // Seed Initial Data States
 // ------------------------------------------
 
-let localPosts = getExpandedPosts();
+let localPosts: any[] = [];
 
 let localUsers: UserDB[] = [
   {
@@ -345,30 +346,7 @@ async function seedSupabaseIfNeeded() {
     }
 
     if (count === 0) {
-      console.log("☘️ Supabase DB is bare. Initiating pipeline batch push for 175+ stories...");
-      const fullList = getExpandedPosts();
-      
-      const batchSize = 25;
-      for (let i = 0; i < fullList.length; i += batchSize) {
-        const batch = fullList.slice(i, i + batchSize).map(p => ({
-          id: p.id,
-          title: p.title,
-          subtitle: p.subtitle,
-          category: p.category,
-          author: p.author,
-          date: p.date,
-          read_time: p.readTime,
-          content: p.content,
-          quotes: p.quotes || [],
-          image_url: p.imageUrl,
-          tags: p.tags,
-          likes: p.likes,
-          comments: p.comments || []
-        }));
-        
-        await db.from("posts").insert(batch);
-      }
-      console.log("✅ Supabase complete seed loaded!");
+      console.log("☘️ Supabase DB is bare. Ready for new stories...");
     }
   } catch (err) {
     console.error("Failed auto seeding Supabase DB:", err);
@@ -526,6 +504,32 @@ app.post("/api/v1/auth/login", (req, res) => {
     refreshToken: "mock_jwt_refresh_token_v1",
     expiresIn: 900 // 15 mins
   });
+});
+
+app.post("/api/v1/auth/admin-login", (req, res) => {
+  const { password } = req.body;
+  if (password === "admin") {
+    res.cookie("admin_token", "secure_admin_jwt_123", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    return res.json({ success: true });
+  }
+  return res.status(401).json({ success: false, error: "Authentication failed" });
+});
+
+app.post("/api/v1/auth/admin-logout", (req, res) => {
+  res.clearCookie("admin_token");
+  return res.json({ success: true });
+});
+
+app.get("/api/v1/auth/verify-admin", (req, res) => {
+  if (req.cookies && req.cookies.admin_token === "secure_admin_jwt_123") {
+    return res.json({ isAuthenticated: true });
+  }
+  return res.status(401).json({ isAuthenticated: false });
 });
 
 app.post("/api/v1/auth/login/google", (req, res) => {
