@@ -1,0 +1,6 @@
+{
+  "name": "Vivid",
+  "description": "A bold, modern personal lifestyle blog with a high-end editorial magazine aesthetic.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
