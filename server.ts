@@ -7,6 +7,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = 3000;
 
 app.use(express.json());
@@ -508,11 +509,13 @@ app.post("/api/v1/auth/login", (req, res) => {
 
 app.post("/api/v1/auth/admin-login", (req, res) => {
   const { password } = req.body;
-  if (password === "123456789") {
+  const adminPassword = process.env.ADMIN_PASSWORD || "123456789";
+  
+  if (password === adminPassword) {
     res.cookie("admin_token", "secure_admin_jwt_123", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     return res.json({ success: true });
@@ -521,7 +524,11 @@ app.post("/api/v1/auth/admin-login", (req, res) => {
 });
 
 app.post("/api/v1/auth/admin-logout", (req, res) => {
-  res.clearCookie("admin_token");
+  res.clearCookie("admin_token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none"
+  });
   return res.json({ success: true });
 });
 
@@ -1155,7 +1162,14 @@ app.get("/api/posts", async (req, res) => {
   return res.json(localPosts);
 });
 
-app.post("/api/posts", async (req, res) => {
+const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.cookies && req.cookies.admin_token === "secure_admin_jwt_123") {
+    return next();
+  }
+  return res.status(401).json({ error: "Unauthorized admin access." });
+};
+
+app.post("/api/posts", requireAdmin, async (req, res) => {
   const newPost = req.body;
   if (!newPost.id) {
     newPost.id = `post-${Date.now()}`;
@@ -1234,7 +1248,7 @@ app.post("/api/posts/:id/comment", async (req, res) => {
   return res.json({ comments: post ? post.comments : [] });
 });
 
-app.put("/api/posts/:id", async (req, res) => {
+app.put("/api/posts/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const updatedPost = req.body;
 
@@ -1264,7 +1278,7 @@ app.put("/api/posts/:id", async (req, res) => {
   return res.json(updatedPost);
 });
 
-app.delete("/api/posts/:id", async (req, res) => {
+app.delete("/api/posts/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   localPosts = localPosts.filter(p => p.id !== id);
 
@@ -1279,7 +1293,7 @@ app.delete("/api/posts/:id", async (req, res) => {
   return res.json({ success: true, id });
 });
 
-app.post("/api/posts/purge", async (req, res) => {
+app.post("/api/posts/purge", requireAdmin, async (req, res) => {
   localPosts = [];
 
   if (db) {
