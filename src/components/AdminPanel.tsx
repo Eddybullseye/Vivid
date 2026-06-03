@@ -53,7 +53,7 @@ export default function AdminPanel({
   const [adminError, setAdminError] = useState(false);
 
   useEffect(() => {
-    fetch('/api/v1/auth/me', { credentials: 'include' })
+    fetch('/api/v1/auth/me')
       .then(res => {
         if (res.ok) {
           setIsAuthenticated(true);
@@ -368,7 +368,6 @@ export default function AdminPanel({
               const res = await fetch('/api/v1/auth/admin-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({ password: adminPassword })
               });
               const data = await res.json();

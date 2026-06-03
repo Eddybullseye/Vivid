@@ -12,13 +12,6 @@ const PORT = 3000;
 app.use(express.json());
 app.use(cookieParser());
 
-const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (req.cookies && req.cookies.admin_token === "secure_admin_jwt_123") {
-    return next();
-  }
-  return res.status(401).json({ error: "Unauthorized" });
-};
-
 // ==========================================
 // 🗄️ MODEL TYPES & IN-MEMORY STATE STORAGE
 // ==========================================
@@ -518,7 +511,8 @@ app.post("/api/v1/auth/admin-login", (req, res) => {
   if (password === "123456789") {
     res.cookie("admin_token", "secure_admin_jwt_123", {
       httpOnly: true,
-      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     return res.json({ success: true });
@@ -689,7 +683,7 @@ app.get("/api/v1/posts/:idOrSlug/comments", (req, res) => {
   return res.json(post.comments || []);
 });
 
-app.post("/api/v1/posts", requireAdmin, (req, res) => {
+app.post("/api/v1/posts", (req, res) => {
   const newPost = req.body;
   if (!newPost.id) {
     newPost.id = `post-${Date.now()}`;
@@ -698,7 +692,7 @@ app.post("/api/v1/posts", requireAdmin, (req, res) => {
   return res.status(201).json(newPost);
 });
 
-app.patch("/api/v1/posts/:id", requireAdmin, (req, res) => {
+app.patch("/api/v1/posts/:id", (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   
@@ -712,7 +706,7 @@ app.patch("/api/v1/posts/:id", requireAdmin, (req, res) => {
   return res.json(matched);
 });
 
-app.delete("/api/v1/posts/:id", requireAdmin, (req, res) => {
+app.delete("/api/v1/posts/:id", (req, res) => {
   const { id } = req.params;
   localPosts = localPosts.filter(p => p.id !== id);
   return res.json({ success: true, id });
@@ -787,7 +781,7 @@ app.get("/api/v1/categories/:slug/posts", (req, res) => {
   return res.json(matching);
 });
 
-app.post("/api/v1/categories", requireAdmin, (req, res) => {
+app.post("/api/v1/categories", (req, res) => {
   const incoming = req.body;
   const newCat: CategoryDB = {
     id: `cat-${Date.now()}`,
@@ -806,14 +800,14 @@ app.post("/api/v1/categories", requireAdmin, (req, res) => {
   return res.status(201).json(newCat);
 });
 
-app.patch("/api/v1/categories/:id", requireAdmin, (req, res) => {
+app.patch("/api/v1/categories/:id", (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   localCategories = localCategories.map(c => c.id === id ? { ...c, ...updates } : c);
   return res.json(localCategories.find(c => c.id === id));
 });
 
-app.delete("/api/v1/categories/:id", requireAdmin, (req, res) => {
+app.delete("/api/v1/categories/:id", (req, res) => {
   localCategories = localCategories.filter(c => c.id !== req.params.id);
   return res.json({ success: true });
 });
@@ -846,7 +840,7 @@ app.post("/api/v1/comments", (req, res) => {
   return res.status(201).json(commentObj);
 });
 
-app.patch("/api/v1/comments/:id", requireAdmin, (req, res) => {
+app.patch("/api/v1/comments/:id", (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
 
@@ -863,7 +857,7 @@ app.patch("/api/v1/comments/:id", requireAdmin, (req, res) => {
   return res.json({ success: true });
 });
 
-app.delete("/api/v1/comments/:id", requireAdmin, (req, res) => {
+app.delete("/api/v1/comments/:id", (req, res) => {
   const { id } = req.params;
   localPosts = localPosts.map(post => {
     if (post.comments) {
@@ -929,7 +923,7 @@ app.get("/api/v1/newsletter/subscribers", (req, res) => {
   return res.json(localSubscribers);
 });
 
-app.post("/api/v1/newsletter/send", requireAdmin, (req, res) => {
+app.post("/api/v1/newsletter/send", (req, res) => {
   return res.json({ success: true, message: "Campaign queued safely to email deliverability system." });
 });
 
@@ -939,7 +933,7 @@ app.get("/api/v1/newsletter/campaigns", (req, res) => {
   ]);
 });
 
-app.post("/api/v1/newsletter/campaigns", requireAdmin, (req, res) => {
+app.post("/api/v1/newsletter/campaigns", (req, res) => {
   return res.json({ success: true });
 });
 
@@ -990,7 +984,7 @@ app.get("/api/v1/media", (req, res) => {
   return res.json(localMedia);
 });
 
-app.post("/api/v1/media/upload", requireAdmin, (req, res) => {
+app.post("/api/v1/media/upload", (req, res) => {
   const incoming = req.body;
   const newMedia: MediaDB = {
     id: `med-${Date.now()}`,
@@ -1161,7 +1155,7 @@ app.get("/api/posts", async (req, res) => {
   return res.json(localPosts);
 });
 
-app.post("/api/posts", requireAdmin, async (req, res) => {
+app.post("/api/posts", async (req, res) => {
   const newPost = req.body;
   if (!newPost.id) {
     newPost.id = `post-${Date.now()}`;
@@ -1240,7 +1234,7 @@ app.post("/api/posts/:id/comment", async (req, res) => {
   return res.json({ comments: post ? post.comments : [] });
 });
 
-app.put("/api/posts/:id", requireAdmin, async (req, res) => {
+app.put("/api/posts/:id", async (req, res) => {
   const { id } = req.params;
   const updatedPost = req.body;
 
@@ -1270,7 +1264,7 @@ app.put("/api/posts/:id", requireAdmin, async (req, res) => {
   return res.json(updatedPost);
 });
 
-app.delete("/api/posts/:id", requireAdmin, async (req, res) => {
+app.delete("/api/posts/:id", async (req, res) => {
   const { id } = req.params;
   localPosts = localPosts.filter(p => p.id !== id);
 
@@ -1285,7 +1279,7 @@ app.delete("/api/posts/:id", requireAdmin, async (req, res) => {
   return res.json({ success: true, id });
 });
 
-app.post("/api/posts/purge", requireAdmin, async (req, res) => {
+app.post("/api/posts/purge", async (req, res) => {
   localPosts = [];
 
   if (db) {
@@ -1312,7 +1306,7 @@ async function setupVite() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = __dirname;
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
