@@ -518,8 +518,7 @@ app.post("/api/v1/auth/admin-login", (req, res) => {
   if (password === "123456789") {
     res.cookie("admin_token", "secure_admin_jwt_123", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     return res.json({ success: true });
@@ -1313,7 +1312,7 @@ async function setupVite() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = __dirname;
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
