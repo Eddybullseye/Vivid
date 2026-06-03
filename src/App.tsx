@@ -26,7 +26,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<Category | 'ALL' | 'SAVED' | 'MOOD' | 'BLUEPRINT' | 'ADMIN'>(
-    window.location.pathname === '/admin-portal' || new URLSearchParams(window.location.search).get('portal') === 'admin' ? 'ADMIN' : 'ALL'
+    window.location.pathname === '/secret-admin-portal' ? 'ADMIN' : 'ALL'
   );
   const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
@@ -357,7 +357,7 @@ export default function App() {
                   onPurgeAllPosts={handlePurgeAllPosts}
                   onClose={() => {
                     setActiveCategory('ALL');
-                    if (window.location.pathname === '/admin-portal') {
+                    if (window.location.pathname === '/secret-admin-portal') {
                       window.history.pushState({}, '', '/');
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -366,7 +366,7 @@ export default function App() {
                     try {
                       await fetch('/api/v1/auth/admin-logout', { method: 'POST' });
                       setActiveCategory('ALL');
-                      if (window.location.pathname === '/admin-portal') {
+                      if (window.location.pathname === '/secret-admin-portal') {
                         window.history.pushState({}, '', '/');
                       }
                       window.scrollTo({ top: 0, behavior: 'smooth' });
