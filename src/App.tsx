@@ -188,6 +188,7 @@ export default function App() {
     fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(newPost)
     }).catch(err => console.error("Database failed to create post:", err));
   };
@@ -203,6 +204,7 @@ export default function App() {
     fetch(`/api/posts/${postId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(updatedPost)
     }).catch(err => console.error("Database failed to update post:", err));
   };
@@ -216,7 +218,8 @@ export default function App() {
 
     // Sync seamlessly with backend
     fetch(`/api/posts/${postId}`, {
-      method: "DELETE"
+      method: "DELETE",
+      credentials: "include"
     }).catch(err => console.error("Database failed to delete post:", err));
   };
 
@@ -228,7 +231,8 @@ export default function App() {
 
     // Sync seamlessly with backend
     fetch("/api/posts/purge", {
-      method: "POST"
+      method: "POST",
+      credentials: "include"
     }).catch(err => console.error("Database failed to purge posts:", err));
   };
 
@@ -364,7 +368,7 @@ export default function App() {
                   }}
                   onLogout={async () => {
                     try {
-                      await fetch('/api/v1/auth/admin-logout', { method: 'POST' });
+                      await fetch('/api/v1/auth/admin-logout', { method: 'POST', credentials: 'include' });
                       setActiveCategory('ALL');
                       if (window.location.pathname === '/secret-admin-portal') {
                         window.history.pushState({}, '', '/');
