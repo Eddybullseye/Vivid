@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, Edit3, Trash2, Heart, MessageSquare, Tag, 
@@ -47,6 +47,22 @@ export default function AdminPanel({
   onClose,
   onLogout
 }: AdminPanelProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/v1/auth/me')
+      .then(res => {
+        if (res.ok) {
+          setIsAuthenticated(true);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   
   // Search & Filtering States
@@ -329,6 +345,67 @@ export default function AdminPanel({
     
     onUpdatePost(postId, updatedPost);
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full min-h-[500px] flex items-center justify-center bg-stone-950 rounded-2xl border border-stone-800">
+        <div className="animate-spin text-[#e84b1f]"><Compass size={32} /></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full max-w-md mx-auto my-12 sm:my-24 p-6 sm:p-8 border border-stone-800 bg-stone-950 rounded-2xl">
+        <div className="text-center mb-8">
+          <h2 className="font-bebas text-3xl tracking-widest text-[#f5f0e8] uppercase">ADMINISTRATIVE ACCESS</h2>
+          <p className="text-stone-400 font-serif-display italic mt-2 text-sm">Please authenticate to continue.</p>
+        </div>
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              const res = await fetch('/api/v1/auth/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPassword })
+              });
+              const data = await res.json();
+              if (data.success) {
+                setIsAuthenticated(true);
+                setAdminError(false);
+              } else {
+                setAdminError(true);
+              }
+            } catch (err) {
+              setAdminError(true);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => {
+                setAdminPassword(e.target.value);
+                setAdminError(false);
+              }}
+              placeholder="Passcode"
+              className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-mono text-sm tracking-widest`}
+            />
+            {adminError && <p className="text-red-500 font-mono text-[9px] mt-2 uppercase tracking-widest">Authentication Failed</p>}
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors"
+          >
+            ENTER TERMINAL
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#070707] min-h-screen text-stone-100 font-sans pointer-events-auto selection:bg-[#e84b1f] selection:text-white">

@@ -426,17 +426,7 @@ export default function Header({
               NEWSLETTER
             </RollingLink>
 
-            {/* ADMIN */}
-            <RollingLink
-              active={activeCategory === 'ADMIN'}
-              onClick={() => {
-                setActiveCategory('ADMIN');
-                setTopicsOpen(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            >
-              ADMIN
-            </RollingLink>
+
           </nav>
 
           {/* Far Right: Solid red Subscribe CTA + Expandable Search */}
@@ -650,14 +640,7 @@ export default function Header({
                     isActive: activeCategory === 'MOOD',
                     isYellow: true
                   },
-                  {
-                    label: 'ADMIN DECK CONTROL',
-                    onClick: () => {
-                      setActiveCategory('ADMIN');
-                    },
-                    isActive: activeCategory === 'ADMIN',
-                    isYellow: true
-                  },
+
                   {
                     label: 'DRAFT CONTRIBUTION',
                     onClick: () => {

@@ -508,7 +508,7 @@ app.post("/api/v1/auth/login", (req, res) => {
 
 app.post("/api/v1/auth/admin-login", (req, res) => {
   const { password } = req.body;
-  if (password === "admin") {
+  if (password === "123456789") {
     res.cookie("admin_token", "secure_admin_jwt_123", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -554,7 +554,10 @@ app.post(["/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v
 });
 
 app.get("/api/v1/auth/me", (req, res) => {
-  return res.json(getMeProfile());
+  if (req.cookies && req.cookies.admin_token === "secure_admin_jwt_123") {
+    return res.json({ isAuthenticated: true, user: getMeProfile() });
+  }
+  return res.status(401).json({ isAuthenticated: false, error: "Unauthorized" });
 });
 
 app.patch("/api/v1/auth/me", (req, res) => {

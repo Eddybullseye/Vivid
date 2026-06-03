@@ -25,17 +25,14 @@ export default function App() {
   // 1. Core States
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [activeCategory, setActiveCategory] = useState<Category | 'ALL' | 'SAVED' | 'MOOD' | 'BLUEPRINT' | 'ADMIN'>('ALL');
+  const [activeCategory, setActiveCategory] = useState<Category | 'ALL' | 'SAVED' | 'MOOD' | 'BLUEPRINT' | 'ADMIN'>(
+    window.location.pathname === '/admin-portal' || new URLSearchParams(window.location.search).get('portal') === 'admin' ? 'ADMIN' : 'ALL'
+  );
   const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [activePost, setActivePost] = useState<BlogPost | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Admin auth
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminError, setAdminError] = useState(false);
 
   // Scroll Tracking for reading progress and back-to-top button
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -92,17 +89,6 @@ export default function App() {
     if (cachedLiked) {
       try { setLikedPostIds(JSON.parse(cachedLiked)); } catch (e) {}
     }
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/v1/auth/verify-admin')
-      .then(res => res.json())
-      .then(data => {
-        if (data.isAuthenticated) {
-          setIsAdminAuthenticated(true);
-        }
-      })
-      .catch(err => console.error("Admin verification error", err));
   }, []);
 
   // Sync active post to URL query parameters for live shareable routes
@@ -363,77 +349,32 @@ export default function App() {
 
               {/* 1. Admin Management Deck Panel */}
               {activeCategory === 'ADMIN' ? (
-                isAdminAuthenticated ? (
-                  <AdminPanel
-                    posts={posts}
-                    onAddPost={handleCreatePost}
-                    onUpdatePost={handleUpdatePost}
-                    onDeletePost={handleDeletePost}
-                    onPurgeAllPosts={handlePurgeAllPosts}
-                    onClose={() => {
+                <AdminPanel
+                  posts={posts}
+                  onAddPost={handleCreatePost}
+                  onUpdatePost={handleUpdatePost}
+                  onDeletePost={handleDeletePost}
+                  onPurgeAllPosts={handlePurgeAllPosts}
+                  onClose={() => {
+                    setActiveCategory('ALL');
+                    if (window.location.pathname === '/admin-portal') {
+                      window.history.pushState({}, '', '/');
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onLogout={async () => {
+                    try {
+                      await fetch('/api/v1/auth/admin-logout', { method: 'POST' });
                       setActiveCategory('ALL');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onLogout={async () => {
-                      try {
-                        await fetch('/api/v1/auth/admin-logout', { method: 'POST' });
-                        setIsAdminAuthenticated(false);
-                      } catch (err) {
-                        console.error("Logout failed", err);
+                      if (window.location.pathname === '/admin-portal') {
+                        window.history.pushState({}, '', '/');
                       }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full max-w-md mx-auto my-12 sm:my-24 p-6 sm:p-8 border border-stone-800 bg-stone-950 rounded-2xl">
-                    <div className="text-center mb-8">
-                      <VividLogo size="lg" className="mx-auto mb-4" />
-                      <h2 className="font-bebas text-3xl tracking-widest text-[#f5f0e8] uppercase">ADMINISTRATIVE ACCESS</h2>
-                      <p className="text-stone-400 font-serif-display italic mt-2 text-sm">Please authenticate to continue.</p>
-                    </div>
-                    <form 
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        try {
-                          const res = await fetch('/api/v1/auth/admin-login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ password: adminPassword })
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            setIsAdminAuthenticated(true);
-                            setAdminError(false);
-                          } else {
-                            setAdminError(true);
-                          }
-                        } catch (err) {
-                          setAdminError(true);
-                        }
-                      }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <input
-                          type="password"
-                          value={adminPassword}
-                          onChange={(e) => {
-                            setAdminPassword(e.target.value);
-                            setAdminError(false);
-                          }}
-                          placeholder="Passcode"
-                          className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-mono text-sm tracking-widest`}
-                        />
-                        {adminError && <p className="text-red-500 font-mono text-[9px] mt-2 uppercase tracking-widest">Authentication Failed</p>}
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors"
-                      >
-                        ENTER TERMINAL
-                      </button>
-                    </form>
-                  </div>
-                )
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (err) {
+                      console.error("Logout failed", err);
+                    }
+                  }}
+                />
               ) : activeCategory === 'BLUEPRINT' ? (
                 <BlueprintSection />
               ) : activeCategory === 'SAVED' ? (
