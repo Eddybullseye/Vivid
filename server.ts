@@ -507,17 +507,6 @@ app.post("/api/v1/auth/login", (req, res) => {
   });
 });
 
-app.post("/api/v1/auth/admin-login", (req, res) => {
-  // Accept any credentials for now
-  res.cookie("admin_token", "secure_admin_jwt_123", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  });
-  return res.json({ success: true });
-});
-
 app.post("/api/v1/auth/admin-logout", (req, res) => {
   res.clearCookie("admin_token", {
     httpOnly: true,
@@ -534,7 +523,7 @@ app.get("/api/v1/auth/verify-admin", (req, res) => {
   return res.status(401).json({ isAuthenticated: false });
 });
 
-app.post("/api/v1/auth/login/google", (req, res) => {
+app.post("/api/v1/auth/google", (req, res) => {
   const admin = getMeProfile();
   res.cookie("admin_token", "secure_admin_jwt_123", {
     httpOnly: true,
