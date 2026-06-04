@@ -1314,6 +1314,8 @@ app.post("/api/posts/purge", requireAdmin, async (req, res) => {
 // ==========================================
 
 async function setupVite() {
+  if (process.env.VERCEL) return; // Do not run Vite or listen on port if deployed as a Vercel Serverless Function
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -1334,3 +1336,5 @@ async function setupVite() {
 }
 
 setupVite();
+
+export default app;
