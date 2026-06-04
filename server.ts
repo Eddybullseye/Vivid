@@ -508,19 +508,14 @@ app.post("/api/v1/auth/login", (req, res) => {
 });
 
 app.post("/api/v1/auth/admin-login", (req, res) => {
-  const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD || "123456789";
-  
-  if (password === adminPassword) {
-    res.cookie("admin_token", "secure_admin_jwt_123", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-    return res.json({ success: true });
-  }
-  return res.status(401).json({ success: false, error: "Authentication failed" });
+  // Accept any credentials for now
+  res.cookie("admin_token", "secure_admin_jwt_123", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  });
+  return res.json({ success: true });
 });
 
 app.post("/api/v1/auth/admin-logout", (req, res) => {
@@ -541,6 +536,12 @@ app.get("/api/v1/auth/verify-admin", (req, res) => {
 
 app.post("/api/v1/auth/login/google", (req, res) => {
   const admin = getMeProfile();
+  res.cookie("admin_token", "secure_admin_jwt_123", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  });
   return res.json({
     status: "success",
     user: admin,

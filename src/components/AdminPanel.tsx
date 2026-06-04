@@ -49,6 +49,7 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
 
@@ -356,22 +357,26 @@ export default function AdminPanel({
 
   if (!isAuthenticated) {
     return (
-      <div className="w-full max-w-md mx-auto my-12 sm:my-24 p-6 sm:p-8 border border-stone-800 bg-stone-950 rounded-2xl">
+      <div className="w-full max-w-md mx-auto my-12 sm:my-24 p-6 sm:p-8 border border-stone-800 bg-stone-950 rounded-2xl flex flex-col items-center justify-center min-h-[300px]">
         <div className="text-center mb-8">
           <h2 className="font-bebas text-3xl tracking-widest text-[#f5f0e8] uppercase">ADMINISTRATIVE ACCESS</h2>
           <p className="text-stone-400 font-serif-display italic mt-2 text-sm">Please authenticate to continue.</p>
         </div>
+        
+        {adminError && <p className="text-red-500 font-mono text-[10px] mb-4 uppercase tracking-widest text-center">Authentication Failed</p>}
+        
         <form 
           onSubmit={async (e) => {
             e.preventDefault();
             try {
+              setIsLoading(true);
               const res = await fetch('/api/v1/auth/admin-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: adminPassword })
+                body: JSON.stringify({ email: adminEmail, password: adminPassword })
               });
               const data = await res.json();
-              if (data.success) {
+              if (res.ok && data.success) {
                 setIsAuthenticated(true);
                 setAdminError(false);
               } else {
@@ -379,10 +384,24 @@ export default function AdminPanel({
               }
             } catch (err) {
               setAdminError(true);
+            } finally {
+              setIsLoading(false);
             }
           }}
-          className="space-y-4"
+          className="space-y-4 w-full"
         >
+          <div>
+            <input
+              type="text"
+              value={adminEmail}
+              onChange={(e) => {
+                setAdminEmail(e.target.value);
+                setAdminError(false);
+              }}
+              placeholder="Email"
+              className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-sans text-sm`}
+            />
+          </div>
           <div>
             <input
               type="password"
@@ -394,11 +413,10 @@ export default function AdminPanel({
               placeholder="Passcode"
               className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-mono text-sm tracking-widest`}
             />
-            {adminError && <p className="text-red-500 font-mono text-[9px] mt-2 uppercase tracking-widest">Authentication Failed</p>}
           </div>
           <button
             type="submit"
-            className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors"
+            className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors cursor-pointer"
           >
             ENTER TERMINAL
           </button>
