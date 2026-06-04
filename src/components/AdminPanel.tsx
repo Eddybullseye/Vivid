@@ -49,6 +49,8 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
 
   useEffect(() => {
@@ -363,6 +365,69 @@ export default function AdminPanel({
         
         {adminError && <p className="text-red-500 font-mono text-[10px] mb-4 uppercase tracking-widest text-center">Authentication Failed</p>}
         
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              setIsLoading(true);
+              const res = await fetch('/api/v1/auth/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: adminEmail, password: adminPassword })
+              });
+              const data = await res.json();
+              if (res.ok && data.success) {
+                setIsAuthenticated(true);
+                setAdminError(false);
+              } else {
+                setAdminError(true);
+              }
+            } catch (err) {
+              setAdminError(true);
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+          className="space-y-4 w-full mb-6"
+        >
+          <div>
+            <input
+              type="text"
+              value={adminEmail}
+              onChange={(e) => {
+                setAdminEmail(e.target.value);
+                setAdminError(false);
+              }}
+              placeholder="Email"
+              className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-sans text-sm`}
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => {
+                setAdminPassword(e.target.value);
+                setAdminError(false);
+              }}
+              placeholder="Passcode"
+              className={`w-full bg-stone-900 border ${adminError ? 'border-red-500' : 'border-stone-800'} text-white px-4 py-3 rounded-xl focus:outline-none focus:border-[#e84b1f] font-mono text-sm tracking-widest`}
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-[#e84b1f] text-white font-mono text-[10px] tracking-widest font-bold uppercase py-4 rounded-xl hover:bg-[#ff5522] transition-colors cursor-pointer"
+          >
+            ENTER TERMINAL
+          </button>
+        </form>
+
+        <div className="relative w-full flex items-center py-2 mb-4">
+          <div className="flex-grow border-t border-stone-800"></div>
+          <span className="flex-shrink-0 mx-4 text-stone-500 text-xs font-mono tracking-widest uppercase">OR</span>
+          <div className="flex-grow border-t border-stone-800"></div>
+        </div>
+
         <button 
           onClick={async () => {
             try {
